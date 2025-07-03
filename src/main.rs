@@ -49,19 +49,19 @@ fn process_chunk(chunk: &[u8], output_dir: &str) -> Result<(), String> {
     if chunk.len() < 17 {
         return Ok(());
     }
-    let buffer_size = u32::from_be_bytes([chunk[16],chunk[15],chunk[14],chunk[13]]) as usize;
+    let buffer_size = u32::from_be_bytes([chunk[17],chunk[16],chunk[15],chunk[14]]) as usize;
     if buffer_size == 0 {
         return Ok(());
     }
-    let string_length = chunk[21] as usize;
+    let string_length = chunk[22] as usize;
 
     if chunk.len() < 3 + string_length {
         return Ok(());
     }
 
-    let filename_bytes = &chunk[25..25 + string_length];
+    let filename_bytes = &chunk[26..26 + string_length];
     let filename = String::from_utf8_lossy(filename_bytes).to_string();
-    let buffer_data = &chunk[25 + string_length..];
+    let buffer_data = &chunk[26 + string_length..];
 
     let output_path = Path::new(output_dir).join(&filename);
     if let Some(parent) = output_path.parent() {
@@ -81,7 +81,7 @@ fn process_chunk(chunk: &[u8], output_dir: &str) -> Result<(), String> {
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
-    let delimiter = [0x47, 0x42, 0x4D, 0x50, 0x0A];
+    let delimiter = [0x47, 0x42, 0x4D, 0x50];
 
     let input_path = validate_input(&args)?;
 
