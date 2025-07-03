@@ -46,11 +46,10 @@ fn split_chunks<'a>(buffer: &'a [u8], delimiter: &'a [u8]) -> Vec<&'a [u8]> {
 }
 
 fn process_chunk(chunk: &[u8], output_dir: &str) -> Result<(), String> {
-    if chunk.len() < 3 {
+    if chunk.len() < 17 {
         return Ok(());
     }
-
-    let buffer_size = u16::from_be_bytes([chunk[16], chunk[15]]) as usize;
+    let buffer_size = u32::from_be_bytes([chunk[16],chunk[15],chunk[14],chunk[13]]) as usize;
     if buffer_size == 0 {
         return Ok(());
     }
@@ -86,11 +85,15 @@ fn main() -> Result<(), String> {
 
     let input_path = validate_input(&args)?;
 
-    let output_dir = Path::new(&input_path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_string())
-        .unwrap_or("output".to_string());
+    let output_dir = Path::new("Output")
+        .join(Path::new(&input_path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())
+            .unwrap_or("output".to_string()));
+    let output_dir = output_dir.to_str()
+        .ok_or_else(|| "Invalid output directory path".to_string())?;
+    
     fs::create_dir_all(&output_dir)
         .map_err(|e| format!("Failed to create output directory: {}", e))?;
 
