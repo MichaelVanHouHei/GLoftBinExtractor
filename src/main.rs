@@ -19,7 +19,7 @@ fn validate_input(args: &[String]) -> Result<Vec<String>, String> {
 
     if input_path.is_dir() {
         let bin_files: Vec<String> = fs::read_dir(input_path)
-            .map_err(|e| format!("Failed to read directory: {e}"))?
+            .map_err(|e| format!("Failed to read directory {}: {e}", input_path.display()))?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
                 if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("bin") {
