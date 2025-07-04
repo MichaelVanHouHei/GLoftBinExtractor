@@ -1,17 +1,25 @@
+use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
-use std::env;
+
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    input_paths: Vec<String>,
+}
 
 fn validate_input(args: &[String]) -> Result<Vec<String>, String> {
     if args.len() != 2 {
         return Err(format!("Usage: {} <input_path>", args[0]));
     }
     let input_path = Path::new(&args[1]);
-    
+
     if input_path.is_dir() {
         let bin_files: Vec<String> = fs::read_dir(input_path)
-            .map_err(|e| format!("Failed to read directory: {}", e))?
+            .map_err(|e| format!("Failed to read directory: {e}"))?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
                 if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("bin") {
@@ -21,7 +29,7 @@ fn validate_input(args: &[String]) -> Result<Vec<String>, String> {
                 }
             })
             .collect();
-        
+
         if bin_files.is_empty() {
             return Err("No .bin files found in directory".to_string());
         }
@@ -35,14 +43,13 @@ fn validate_input(args: &[String]) -> Result<Vec<String>, String> {
 }
 
 fn read_and_validate_file(path: &str, delimiter: &[u8]) -> Result<Vec<u8>, String> {
-    let mut file = File::open(path)
-        .map_err(|e| format!("Failed to open file {}: {}", path, e))?;
+    let mut file = File::open(path).map_err(|e| format!("Failed to open file {path}: {e}"))?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)
-        .map_err(|e| format!("Failed to read file {}: {}", path, e))?;
+        .map_err(|e| format!("Failed to read file {path}: {e}"))?;
 
     if buffer.len() < delimiter.len() || buffer[0..delimiter.len()] != *delimiter {
-        return Err(format!("File {} does not start with valid delimiter", path));
+        return Err(format!("File {path} does not start with valid delimiter"));
     }
     Ok(buffer)
 }
@@ -89,7 +96,7 @@ fn process_chunk(chunk: &[u8], output_dir: &str) -> Result<(), String> {
             .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
     }
 
-    println!("filename: {}, buffer: {}", filename, buffer_size);
+    println!("filename: {filename}, buffer: {buffer_size}");
     let mut output_file = File::create(&output_path)
         .map_err(|e| format!("Failed to create file {}: {}", output_path.display(), e))?;
     output_file
@@ -100,17 +107,19 @@ fn process_chunk(chunk: &[u8], output_dir: &str) -> Result<(), String> {
 }
 
 fn process_file(input_path: &str, delimiter: &[u8]) -> Result<(), String> {
-    let output_dir = Path::new("Output")
-        .join(Path::new(&input_path)
+    let output_dir = Path::new("Output").join(
+        Path::new(&input_path)
             .file_stem()
             .and_then(|s| s.to_str())
             .map(|s| s.to_string())
-            .unwrap_or("output".to_string()));
-    let output_dir = output_dir.to_str()
-        .ok_or_else(|| format!("Invalid output directory path for {}", input_path))?;
-    
-    fs::create_dir_all(&output_dir)
-        .map_err(|e| format!("Failed to create output directory {}: {}", output_dir, e))?;
+            .unwrap_or("output".to_string()),
+    );
+    let output_dir = output_dir
+        .to_str()
+        .ok_or_else(|| format!("Invalid output directory path for {input_path}"))?;
+
+    fs::create_dir_all(output_dir)
+        .map_err(|e| format!("Failed to create output directory {output_dir}: {e}"))?;
 
     let buffer = read_and_validate_file(input_path, delimiter)?;
 
@@ -126,14 +135,15 @@ fn process_file(input_path: &str, delimiter: &[u8]) -> Result<(), String> {
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
     let delimiter = [0x47, 0x42, 0x4D, 0x50];
+    let args = Args::parse_from(args);
 
-    let input_paths = validate_input(&args)?;
+    let input_paths = validate_input(&args.input_paths)?;
 
     for input_path in input_paths {
-        println!("Processing file: {}", input_path);
+        println!("Processing file: {input_path}");
         if let Err(e) = process_file(&input_path, &delimiter) {
-            eprintln!("Error processing file {}: {}", input_path, e);
-            continue; 
+            eprintln!("Error processing file {input_path}: {e}");
+            continue;
         }
     }
 
