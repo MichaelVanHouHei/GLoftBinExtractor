@@ -1,4 +1,3 @@
-use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
@@ -10,6 +9,8 @@ use clap::Parser;
 struct Args {
     input_paths: Vec<String>,
 }
+
+const DELIMITER: [u8; 4] = [0x47, 0x42, 0x4D, 0x50];
 
 fn validate_input(args: &[String]) -> Result<Vec<String>, String> {
     if args.len() != 2 {
@@ -133,15 +134,13 @@ fn process_file(input_path: &str, delimiter: &[u8]) -> Result<(), String> {
 }
 
 fn main() -> Result<(), String> {
-    let args: Vec<String> = env::args().collect();
-    let delimiter = [0x47, 0x42, 0x4D, 0x50];
-    let args = Args::parse_from(args);
+    let args = Args::parse();
 
     let input_paths = validate_input(&args.input_paths)?;
 
     for input_path in input_paths {
         println!("Processing file: {input_path}");
-        if let Err(e) = process_file(&input_path, &delimiter) {
+        if let Err(e) = process_file(&input_path, &DELIMITER) {
             eprintln!("Error processing file {input_path}: {e}");
             continue;
         }
