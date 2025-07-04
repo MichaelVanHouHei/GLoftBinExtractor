@@ -6,7 +6,7 @@ use std::path::Path;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version)]
 struct Args {
     input_paths: Vec<String>,
 }
